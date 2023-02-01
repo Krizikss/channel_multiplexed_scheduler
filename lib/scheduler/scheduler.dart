@@ -49,26 +49,20 @@ abstract class Scheduler {
     };
   }
 
-  /// Sends file chunks through available channels.
-  ///
-  /// While there are chunks to send, it unstacks them one by one, and choose
-  /// a channel to send them.
-  ///
-  /// When sending a chunk, this registers a timeout callback, that triggers
-  /// resending chunk if channel didn't send an acknowledgement.
-  Future<void> sendFile(File file, int chunksize) async {
+
+  Future<void> sendData(String data, int chunksize) async {
     if (_channels.isEmpty) {
       throw StateError('Cannot send file because scheduler has no channel.');
     }
 
-    _chunksQueue = splitFile(file, chunksize);
+    _chunksQueue = splitData(data, chunksize);
 
     // Open bootstrap channel and send file metadata.
     await bootstrapChannel.initSender();
     await bootstrapChannel.sendFileMetadata(
-        FileMetadata(file.uri.pathSegments.last, chunksize, _chunksQueue.length)
+        FileMetadata("data", chunksize, _chunksQueue.length)
     );
-    
+
     // Open all channels.
     await Future.wait(_channels.map((c) => c.initSender( bootstrapChannel )));
     debugPrint("[Scheduler] All data channels are ready, data sending can start.\n");
@@ -123,15 +117,9 @@ abstract class Scheduler {
     await channel.sendChunk(chunk);
   }
 
-  /// Divides an input file into chunks of *chunksize* size.
-  /// This will fail if input file is not accessible, or if input chunk size is
-  /// invalid.
-  List<FileChunk> splitFile (File file, int chunksize) {
-    if (!file.existsSync()) {
-      throw RangeError('Invalid input file (path="${file.path}").');
-    }
+  List<FileChunk> splitData (String data, int chunksize) {
 
-    Uint8List bytes = file.readAsBytesSync();
+    Uint8List bytes = Uint8List.fromList(data.codeUnits);
     List<FileChunk> chunks = [];
     int bytesCount = bytes.length;
     int index = 0;

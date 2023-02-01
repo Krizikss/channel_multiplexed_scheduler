@@ -7,6 +7,7 @@ import 'package:venice_core/channels/events/data_channel_event.dart';
 import 'package:venice_core/channels/abstractions/data_channel.dart';
 import 'package:venice_core/file/file_chunk.dart';
 import 'package:venice_core/file/file_metadata.dart';
+import 'package:flutter/material.dart';
 
 
 /// The Receiver class goal is to receive a file from a Scheduler instance
@@ -40,17 +41,12 @@ class Receiver {
     };
   }
 
-  /// Receives a file through available channels.
-  Future<void> receiveFile(Directory destination) async {
+  Future<void> receiveData(TextEditingController textController) async {
     bool allChannelsInitialized = false;
     bool fileMetadataReceived = false;
 
     if (_channels.isEmpty) {
       throw StateError('Cannot receive file because receiver has no channel.');
-    }
-
-    if (!destination.existsSync()) {
-      throw ArgumentError('Destination directory does not exist.');
     }
 
     int initializedChannels = 0;
@@ -59,14 +55,14 @@ class Receiver {
     bootstrapChannel.on = (BootstrapChannelEvent event, dynamic data) async {
       switch(event) {
         case BootstrapChannelEvent.fileMetadata:
-          // TODO use chunk size
+          debugPrint("*********** Received BootstrapChannelEvent.fileMetadata");
           FileMetadata fileMetadata = data;
           _filename = fileMetadata.name;
           _chunksCount = fileMetadata.chunkCount;
           fileMetadataReceived = true;
           break;
         case BootstrapChannelEvent.channelMetadata:
-          // Open all channels.
+          debugPrint("*********** Received BootstrapChannelEvent.channelMetadata");
           ChannelMetadata channelMetadata = data;
 
           // Get matching channel to only send data to it, and not other channels.
@@ -98,14 +94,9 @@ class Receiver {
     // Wait for all chunks to arrive.
     await receiveAllChunks();
 
-    // Fill destination file with received chunks.
-    File newFile = File(destination.path+Platform.pathSeparator+_filename);
-    if (newFile.existsSync()) {
-      newFile.deleteSync();
-    }
-    newFile.createSync();
+
     for (var chunk in _chunks.values) {
-      newFile.writeAsBytesSync(chunk.data, mode: FileMode.append);
+      textController.text = textController.text + String.fromCharCodes(chunk.data);
     }
   }
 
