@@ -46,7 +46,7 @@ class Receiver {
     bool fileMetadataReceived = false;
 
     if (_channels.isEmpty) {
-      throw StateError('Cannot receive file because receiver has no channel.');
+      throw StateError("[Receiver] Cannot receive data because receiver has no channel.");
     }
 
     int initializedChannels = 0;
@@ -55,27 +55,28 @@ class Receiver {
     bootstrapChannel.on = (BootstrapChannelEvent event, dynamic data) async {
       switch(event) {
         case BootstrapChannelEvent.fileMetadata:
-          debugPrint("*********** Received BootstrapChannelEvent.fileMetadata");
+          debugPrint("[Receiver] Received fileMetadata");
           FileMetadata fileMetadata = data;
           _filename = fileMetadata.name;
           _chunksCount = fileMetadata.chunkCount;
           fileMetadataReceived = true;
           break;
         case BootstrapChannelEvent.channelMetadata:
-          debugPrint("*********** Received BootstrapChannelEvent.channelMetadata");
+          debugPrint("[Receiver] Received channelMetadata");
           ChannelMetadata channelMetadata = data;
 
           // Get matching channel to only send data to it, and not other channels.
           DataChannel matchingChannel = _channels.firstWhere((element) =>
               element.identifier == channelMetadata.channelIdentifier,
               orElse: () => throw ArgumentError(
-                  'No channel with identifier "${channelMetadata.channelIdentifier}" was found in receiver channels.')
+                  "[Receiver] No channel with identifier ${channelMetadata.channelIdentifier} was found in receiver channels.")
           );
           await matchingChannel.initReceiver(channelMetadata);
 
           // Start receiving once all channels have been initialized.
           initializedChannels += 1;
           if (initializedChannels == _channels.length) {
+            debugPrint("[Receiver] All Channels have been initialized");
             allChannelsInitialized = true;
           }
 
@@ -96,6 +97,7 @@ class Receiver {
 
 
     for (var chunk in _chunks.values) {
+      debugPrint("String received : ${chunk.data}");
       textController.text = textController.text + String.fromCharCodes(chunk.data);
     }
   }
@@ -103,6 +105,8 @@ class Receiver {
 
   Future<void> receiveAllChunks() async {
     while (_chunks.length != _chunksCount) {
+      debugPrint("[Receiver] chunks length : ${_chunks.length}");
+      debugPrint("[Receiver] chunksCount : ${_chunksCount}");
       await Future.delayed(const Duration(milliseconds: 200));
     }
   }
