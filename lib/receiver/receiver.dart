@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 class Receiver {
   final BootstrapChannel bootstrapChannel;
   late final List<DataChannel> _channels = [];
+  late final DataChannel matchingChannel;
   final Map<int, FileChunk> _chunks = {};
 
   /// Number of chunks we expect to receive.
@@ -66,7 +67,7 @@ class Receiver {
           ChannelMetadata channelMetadata = data;
 
           // Get matching channel to only send data to it, and not other channels.
-          DataChannel matchingChannel = _channels.firstWhere((element) =>
+          matchingChannel = _channels.firstWhere((element) =>
               element.identifier == channelMetadata.channelIdentifier,
               orElse: () => throw ArgumentError(
                   "[Receiver] No channel with identifier ${channelMetadata.channelIdentifier} was found in receiver channels.")
@@ -92,12 +93,18 @@ class Receiver {
       await Future.delayed(const Duration(milliseconds: 100));
     }
 
+    //Start to listen to chunks
+    matchingChannel.receiveChunks(_chunks);
+
     // Wait for all chunks to arrive.
     await receiveAllChunks();
 
 
     for (var chunk in _chunks.values) {
-      debugPrint("String received : ${chunk.data}");
+      debugPrint("[Receiver] chunk data received : ${String.fromCharCodes(chunk.data)}");
+      Fluttertoast.showToast(
+          msg: "chunk data received : ${String.fromCharCodes(chunk.data)}"
+      );
       textController.text = textController.text + String.fromCharCodes(chunk.data);
     }
   }
@@ -105,8 +112,8 @@ class Receiver {
 
   Future<void> receiveAllChunks() async {
     while (_chunks.length != _chunksCount) {
-      debugPrint("[Receiver] chunks length : ${_chunks.length}");
-      debugPrint("[Receiver] chunksCount : ${_chunksCount}");
+      //debugPrint("[Receiver] chunks length : ${_chunks.length}");
+      //debugPrint("[Receiver] chunksCount : ${_chunksCount}");
       await Future.delayed(const Duration(milliseconds: 200));
     }
   }
