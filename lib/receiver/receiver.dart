@@ -102,9 +102,6 @@ class Receiver {
 
     for (var chunk in _chunks.values) {
       debugPrint("[Receiver] chunk data received : ${String.fromCharCodes(chunk.data)}");
-      Fluttertoast.showToast(
-          msg: "chunk data received : ${String.fromCharCodes(chunk.data)}"
-      );
       textController.text = textController.text + String.fromCharCodes(chunk.data);
     }
   }
@@ -112,8 +109,6 @@ class Receiver {
 
   Future<void> receiveAllChunks() async {
     while (_chunks.length != _chunksCount) {
-      //debugPrint("[Receiver] chunks length : ${_chunks.length}");
-      //debugPrint("[Receiver] chunksCount : ${_chunksCount}");
       await Future.delayed(const Duration(milliseconds: 200));
     }
   }
